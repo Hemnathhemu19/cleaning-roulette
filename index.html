@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#f3ede2">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="format-detection" content="telephone=no">
+    <title>Cleaning Roulette</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22><circle cx=%2216%22 cy=%2216%22 r=%2215%22 fill=%22%231b1a17%22/><path d=%22M16 16V1a15 15 0 0 1 13 7.5z%22 fill=%22%23e4572e%22/><path d=%22M16 16l13-7.5a15 15 0 0 1 0 15z%22 fill=%22%23f3b33d%22/></svg>">
+</head>
+<body>
+    <canvas id="confettiCanvas" aria-hidden="true"></canvas>
+
+    <!-- Reusable line icons -->
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+        <symbol id="i-sound" viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/></symbol>
+        <symbol id="i-mute" viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9.5l5 5M20.5 9.5l-5 5"/></symbol>
+        <symbol id="i-moon" viewBox="0 0 24 24"><path d="M19.5 14.5A7.5 7.5 0 0 1 9.5 4.5a7.5 7.5 0 1 0 10 10z"/></symbol>
+        <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></symbol>
+        <symbol id="i-timer" viewBox="0 0 24 24"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 13.5V9.5M9.5 2.5h5"/></symbol>
+        <symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6.5h11M9 12h11M9 17.5h11"/><path d="M3.5 6.5l1.2 1.2 2-2.4M3.5 12l1.2 1.2 2-2.4M3.5 17.5l1.2 1.2 2-2.4"/></symbol>
+        <symbol id="i-x" viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></symbol>
+    </svg>
+
+    <div class="app-container">
+        <!-- Top bar -->
+        <header class="top-nav">
+            <a class="wordmark" href="#" aria-label="Cleaning Roulette">
+                <span class="wordmark-mark" aria-hidden="true"></span>
+                <span>Cleaning Roulette</span>
+            </a>
+
+            <div class="nav-controls">
+                <button type="button" class="icon-btn" id="soundToggleBtn" title="Toggle sound" aria-label="Toggle sound">
+                    <svg class="ico ico-sound-on"><use href="#i-sound"/></svg>
+                    <svg class="ico ico-sound-off"><use href="#i-mute"/></svg>
+                    <span id="soundIcon" hidden></span>
+                    <span class="btn-label" id="soundLabel">Sound on</span>
+                </button>
+                <button type="button" class="icon-btn" id="themeToggleBtn" title="Toggle dark mode" aria-label="Toggle dark mode">
+                    <svg class="ico ico-moon"><use href="#i-moon"/></svg>
+                    <svg class="ico ico-sun"><use href="#i-sun"/></svg>
+                    <span id="themeIcon" hidden></span>
+                    <span class="btn-label">Dark</span>
+                </button>
+                <button type="button" class="icon-btn" id="timerToggleBtn" title="Speed clean timer" aria-label="Go to speed timer">
+                    <svg class="ico"><use href="#i-timer"/></svg>
+                    <span class="btn-label">Timer</span>
+                </button>
+                <button type="button" class="icon-btn" id="checklistBtn" title="Checklist" aria-label="Go to checklist">
+                    <svg class="ico"><use href="#i-list"/></svg>
+                    <span class="btn-label">Checklist</span>
+                    <span class="badge-count" id="pendingBadge">0</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Headline -->
+        <section class="hero-header">
+            <p class="eyebrow">The fair way to split chores</p>
+            <h1 class="main-title">Who's cleaning<br>today?</h1>
+            <p class="hero-subtitle">Spin it. The wheel decides, nobody argues.</p>
+        </section>
+
+        <main class="main-stage-grid">
+            <!-- Wheel -->
+            <section class="wheel-stage-card" aria-label="Spinning wheel">
+                <nav class="mode-tabs" aria-label="Wheel mode">
+                    <button type="button" class="mode-tab active" data-mode="tasks" id="tabTasks">Room</button>
+                    <button type="button" class="mode-tab" data-mode="bathroom" id="tabBathroom">Bathroom</button>
+                    <button type="button" class="mode-tab" data-mode="people" id="tabPeople">People</button>
+                    <button type="button" class="mode-tab" data-mode="combo" id="tabCombo" title="Spin a person and a chore together">Combo</button>
+                </nav>
+
+                <div class="wheel-wrapper">
+                    <div class="wheel-pointer-container" id="wheelPointer" aria-hidden="true">
+                        <svg class="pointer-arrow" viewBox="0 0 40 48">
+                            <path d="M20 46L5 10a15 15 0 1 1 30 0z" class="pointer-body"/>
+                            <circle cx="20" cy="15" r="5" class="pointer-dot"/>
+                        </svg>
+                    </div>
+
+                    <canvas id="wheelCanvas" width="800" height="800" role="img" aria-label="Chore wheel – tap to spin"></canvas>
+
+                    <div class="wheel-hub-overlay" id="wheelCenterHub" aria-hidden="true">
+                        <span id="centerHubIcon">0</span>
+                    </div>
+                </div>
+
+                <div class="wheel-controls">
+                    <button class="spin-btn" id="spinBtn" aria-label="Spin the wheel">Spin the wheel</button>
+                    <p class="spin-subtext">
+                        <span class="hint-pointer">Click, tap the wheel, or press <kbd>Space</kbd></span>
+                        <span class="hint-touch">Tap the button or the wheel</span>
+                    </p>
+
+                    <div class="quick-wheel-actions">
+                        <button class="chip-btn" id="shuffleWheelBtn" title="Randomize slice order">Shuffle</button>
+                        <button class="chip-btn" id="fastSpinBtn" title="Toggle fast spin">
+                            <span id="fastSpinIcon" hidden></span>Turbo <span class="chip-state" id="fastSpinState">Off</span>
+                        </button>
+                        <button class="chip-btn" id="surpriseSpinBtn" title="Draw a mystery chore">Surprise</button>
+                        <button class="chip-btn" id="resetDefaultBtn" title="Reset this wheel to defaults">Reset</button>
+                    </div>
+                </div>
+            </section>
+
+            <aside class="side-panel">
+                <!-- Weekly roster -->
+                <article class="panel-card roster-card" id="rosterSection">
+                    <div class="panel-header">
+                        <h2 class="panel-title"><span class="panel-index">01</span>Weekly roster</h2>
+                        <span class="meta-tag roster-week-badge" id="rosterWeekLabel">Week —</span>
+                    </div>
+
+                    <div class="roster-rule-banner" id="rosterRuleBanner">
+                        <strong>House rules</strong>
+                        <span>Bathroom rotates every week, never the same person twice in a row. Refuse a major chore and you take on <em>two</em>.</span>
+                    </div>
+
+                    <div class="roster-major-grid" id="rosterMajorGrid">
+                        <div class="roster-slot" data-chore="dishes">
+                            <div class="roster-slot-icon swatch-1" aria-hidden="true"></div>
+                            <div class="roster-slot-info">
+                                <div class="roster-slot-label">Dishes</div>
+                                <div class="roster-slot-person" id="rosterDishes">Not assigned</div>
+                            </div>
+                            <div class="roster-slot-actions">
+                                <button class="chip-btn roster-refuse-btn" data-chore="dishes" title="Refuse (penalty: two chores)">Refuse</button>
+                            </div>
+                        </div>
+
+                        <div class="roster-slot" data-chore="floor">
+                            <div class="roster-slot-icon swatch-2" aria-hidden="true"></div>
+                            <div class="roster-slot-info">
+                                <div class="roster-slot-label">Floor</div>
+                                <div class="roster-slot-person" id="rosterFloor">Not assigned</div>
+                            </div>
+                            <div class="roster-slot-actions">
+                                <button class="chip-btn roster-refuse-btn" data-chore="floor" title="Refuse (penalty: two chores)">Refuse</button>
+                            </div>
+                        </div>
+
+                        <div class="roster-slot roster-slot-bathroom" data-chore="bathroom">
+                            <div class="roster-slot-icon swatch-3" aria-hidden="true"></div>
+                            <div class="roster-slot-info">
+                                <div class="roster-slot-label">Bathroom <span class="meta-tag">Rotates</span></div>
+                                <div class="roster-slot-person" id="rosterBathroom">Not assigned</div>
+                                <div class="roster-slot-note" id="rosterBathroomNote">Last week: —</div>
+                            </div>
+                            <div class="roster-slot-actions">
+                                <button class="chip-btn roster-refuse-btn" data-chore="bathroom" title="Refuse (penalty: two chores)">Refuse</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="roster-penalty-alert hidden" id="rosterPenaltyAlert">
+                        <strong>Penalty</strong>
+                        <span id="rosterPenaltyText">—</span>
+                    </div>
+
+                    <div class="roster-actions-row">
+                        <button class="spin-btn roster-generate-btn" id="rosterGenerateBtn">Generate this week</button>
+                    </div>
+                    <div class="roster-actions-row roster-secondary-row">
+                        <button class="chip-btn" id="rosterAddChecklistBtn" title="Add all roster chores to the checklist">Add to checklist</button>
+                        <button class="chip-btn" id="rosterShareBtn" title="Share or copy the roster">Share</button>
+                        <button class="chip-btn chip-quiet" id="rosterResetHistBtn" title="Clear rotation history">Reset history</button>
+                    </div>
+
+                    <div class="roster-fairness-section">
+                        <h3 class="sub-title">Fairness score</h3>
+                        <div class="roster-fairness-grid" id="rosterFairnessGrid"></div>
+                    </div>
+
+                    <div class="roster-history-section">
+                        <h3 class="sub-title">Rotation history</h3>
+                        <div class="roster-history-list" id="rosterHistoryList">
+                            <p class="empty-note">No roster yet. Generate one to start the rotation.</p>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- Speed timer -->
+                <article class="panel-card speed-timer-card" id="speedTimerPanel">
+                    <div class="panel-header">
+                        <h2 class="panel-title"><span class="panel-index">02</span>Speed clean</h2>
+                        <div class="timer-presets" role="group" aria-label="Timer length">
+                            <button class="chip-btn timer-preset-btn" data-time="300">5m</button>
+                            <button class="chip-btn timer-preset-btn" data-time="600">10m</button>
+                            <button class="chip-btn timer-preset-btn active" data-time="900">15m</button>
+                        </div>
+                    </div>
+                    <div class="timer-display-box">
+                        <div class="timer-digits" id="timerDisplay">15:00</div>
+                        <div class="timer-controls">
+                            <button class="icon-btn timer-main-btn" id="timerStartBtn">
+                                <span id="timerStartIcon" hidden></span>
+                                <span id="timerStartText">Start</span>
+                            </button>
+                            <button class="icon-btn" id="timerResetBtn">Reset</button>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- Checklist -->
+                <article class="panel-card" id="checklistSection">
+                    <div class="panel-header">
+                        <h2 class="panel-title"><span class="panel-index">03</span>Today's checklist</h2>
+                        <span class="meta-tag" id="checklistProgressText">0 / 0</span>
+                    </div>
+
+                    <div class="checklist-progress-bar" title="Completion progress">
+                        <div class="checklist-progress-fill" id="checklistProgressFill"></div>
+                    </div>
+
+                    <div class="checklist-list" id="checklistContainer"></div>
+
+                    <form class="add-item-form" id="addChecklistForm">
+                        <input type="text" id="checklistInput" class="input-pill" placeholder="Add a chore…" aria-label="New checklist chore" maxlength="80" autocomplete="off" enterkeyhint="done" required>
+                        <button type="submit" class="icon-btn form-submit-btn">Add</button>
+                    </form>
+                </article>
+
+                <!-- Monthly room expenses -->
+                <article class="panel-card" id="expensesSection">
+                    <div class="panel-header">
+                        <h2 class="panel-title"><span class="panel-index">04</span>Room expenses</h2>
+                        <div class="month-switcher" role="group" aria-label="Month">
+                            <button type="button" class="chip-btn month-nav-btn" id="expPrevMonth" aria-label="Previous month">‹</button>
+                            <span class="meta-tag month-label" id="expMonthLabel">—</span>
+                            <button type="button" class="chip-btn month-nav-btn" id="expNextMonth" aria-label="Next month">›</button>
+                        </div>
+                    </div>
+
+                    <div class="budget-summary">
+                        <div class="budget-figures">
+                            <div>
+                                <div class="budget-spent" id="expSpent">₹0</div>
+                                <div class="budget-caption">spent of <span id="expBudgetLabel">₹1,000</span> allocation</div>
+                            </div>
+                            <div class="budget-left-box">
+                                <div class="budget-left" id="expLeft">₹1,000</div>
+                                <div class="budget-caption" id="expLeftCaption">left this month</div>
+                            </div>
+                        </div>
+                        <div class="budget-bar" title="Budget used">
+                            <div class="budget-bar-fill" id="expBarFill"></div>
+                        </div>
+                        <div class="budget-split">
+                            <span><i class="split-dot swatch-2"></i>Maintenance <strong id="expMaintTotal">₹0</strong></span>
+                            <span><i class="split-dot swatch-3"></i>Utilities <strong id="expUtilTotal">₹0</strong></span>
+                        </div>
+                    </div>
+
+                    <form class="expense-form" id="expenseForm">
+                        <input type="text" id="expItem" class="input-pill expense-item" placeholder="What was it? e.g. Broom, bulb, plumber" aria-label="Expense item" maxlength="60" autocomplete="off" required>
+                        <div class="expense-form-row">
+                            <label class="field">
+                                <span class="field-label">Amount (₹)</span>
+                                <input type="number" id="expAmount" class="input-pill" inputmode="decimal" min="1" step="0.01" placeholder="0" required>
+                            </label>
+                            <label class="field">
+                                <span class="field-label">Type</span>
+                                <select id="expCategory" class="input-pill">
+                                    <option value="maintenance">Maintenance</option>
+                                    <option value="utilities">Utilities</option>
+                                </select>
+                            </label>
+                            <label class="field">
+                                <span class="field-label">Paid by</span>
+                                <select id="expPaidBy" class="input-pill"></select>
+                            </label>
+                            <label class="field">
+                                <span class="field-label">Date</span>
+                                <input type="date" id="expDate" class="input-pill" required>
+                            </label>
+                        </div>
+                        <button type="submit" class="icon-btn btn-ink expense-submit">Add expense</button>
+                    </form>
+
+                    <div class="expense-list" id="expenseList"></div>
+
+                    <div class="expense-footer">
+                        <label class="budget-edit">
+                            <span class="field-label">Monthly allocation (₹)</span>
+                            <input type="number" id="expBudgetInput" class="input-pill" inputmode="numeric" min="0" step="1" value="1000">
+                        </label>
+                        <button type="button" class="chip-btn" id="expShareBtn">Share month</button>
+                    </div>
+                </article>
+
+                <!-- Wheel editor -->
+                <article class="panel-card" id="customizerSection">
+                    <div class="panel-header">
+                        <h2 class="panel-title"><span class="panel-index" id="customizerIcon">05</span><span id="customizerTitle">Edit slices</span></h2>
+                        <span class="meta-tag" id="sliceCountBadge">0 active</span>
+                    </div>
+
+                    <div class="preset-row">
+                        <span class="preset-label">Presets</span>
+                        <button class="chip-btn preset-btn" data-preset="room">Room</button>
+                        <button class="chip-btn preset-btn" data-preset="bathroom">Bathroom</button>
+                        <button class="chip-btn preset-btn" data-preset="squad">The squad</button>                    </div>
+
+                    <div class="editor-items-list" id="editorItemsContainer"></div>
+
+                    <form class="add-item-form" id="addItemForm">
+                        <input type="text" id="newItemInput" class="input-pill" placeholder="Add a slice…" aria-label="New wheel slice" maxlength="60" autocomplete="off" enterkeyhint="done" required>
+                        <button type="submit" class="icon-btn form-submit-btn btn-ink">Add</button>
+                    </form>
+                </article>
+
+                <!-- Spin history -->
+                <article class="panel-card" id="historySection">
+                    <div class="panel-header">
+                        <h2 class="panel-title"><span class="panel-index">06</span>Recent spins</h2>
+                        <button class="chip-btn chip-quiet" id="clearHistoryBtn">Clear</button>
+                    </div>
+                    <div class="history-list" id="historyContainer">
+                        <p class="empty-note">No spins yet.</p>
+                    </div>
+                </article>
+            </aside>
+        </main>
+
+        <footer class="site-footer">Cleaning Roulette · everything stays on this device</footer>
+    </div>
+
+    <!-- Result popup -->
+    <div class="modal-backdrop" id="winnerModal" role="dialog" aria-modal="true" aria-labelledby="winnerHeadline">
+        <div class="modal-card">
+            <div class="winner-icon-bubble" id="winnerIcon" hidden></div>
+            <p class="winner-headline" id="winnerHeadline">Today's chore</p>
+
+            <div class="winner-result-box">
+                <div class="winner-main-text" id="winnerTaskText">Sweep the floor</div>
+                <p class="winner-sub-comment" id="winnerSubComment">The wheel has spoken.</p>
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn-primary" id="modalAcceptBtn">Add to checklist</button>
+                <button class="btn-secondary" id="modalSpinAgainBtn">Spin again</button>
+                <button class="btn-text" id="modalShareBtn">Share result</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-notice" id="toastNotice" role="status">
+        <span id="toastIcon" hidden></span>
+        <span id="toastMessage"></span>
+    </div>
+
+    <script src="audio.js"></script>
+    <script src="confetti.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
